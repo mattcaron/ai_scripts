@@ -1,65 +1,184 @@
 #!/bin/bash
 
-# TODO - getopts
-# default starts Ollama/Open WebUI and not Stable Diffusion
+# Args:
 # --notext - don't fire up all the Ollama stuff
 # --images - fire up stable diffusion and enable Open WebUI integration
 
+# Default is to just start Ollama and not Stable Diffusion
+START_OLLAMA=1
+START_SD=0
+
 # I have everything rooted under a single dir. Change if needed.
 BASE_DIR=/home/matt/storage1/ai
+SD_BASE_DIR=${BASE_DIR}/stable-diffusion-webui
+OLLAMA_BASE_DIR=${BASE_DIR}/ollama
+OPEN_WEBUI_BASE_DIR=${BASE_DIR}/open-webui
 
-# export everything we're about to set
+# Window sizes and positions
+WINDOW1_GEOMETRY="120x22+110+390"
+WINDOW2_GEOMETRY="120x22+110+735"
+WINDOW3_GEOMETRY="120x22+980+390"
+WINDOW4_GEOMETRY="120x22+980+735"
+
+# Execute getopt on the arguments passed to this program, identified
+# by the special character $@
+PARSED_OPTIONS=$(getopt -n "$0" -o hni --long "help,notext,images"  -- "$@")
+
+# Bad arguments, something has gone wrong with the getopt command.
+if [ $? -ne 0 ]; then
+    echo "Failed to parse arguments, exiting."
+    exit 1
+fi
+
+# A little magic, necessary when using getopt.
+eval set -- "$PARSED_OPTIONS"
+
+# Now goes through all the options with a case and using shift to
+# analyse 1 argument at a time.
+#
+# $1 identifies the first argument, and when we use shift we discard
+# the first argument, so $2 becomes $1 and goes again through the
+# case.
+while true
+do
+    case "$1" in
+        
+        -h|--help)
+            echo "Usage $0 [options]"
+            echo ""
+            echo "With no options supplied, it only starts  ollama and open-webui."
+            echo ""
+            echo "Options:"
+            echo "    --notext = don't run ollama and open-webui"
+            echo "    --images = run stable diffusion"
+            exit 0
+            shift;;
+        
+        -n|--notext)
+            START_OLLAMA=0
+            shift;;
+        
+        -i|--images)
+            START_SD=1
+            shift;;
+
+        --)
+            shift
+            break;;
+    esac
+done
+
+if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 ]]; then   
+    echo "Warning: Options selected result in a no-op. Doing nothing as requested."
+    exit 0
+fi
+   
+HOSTNAME=`hostname`
+
+if [ $HOSTNAME == "hiro" ]; then
+    echo "Running on hiro, using that config."
+
+    # Platform specific stable diffusion arguments.
+    # --skip-torch-cuda-test - nVidia M1200. Too old, fails this test.
+    # --xformers - reduces memory usage (nVidia exclusive)
+    # --lowvram - M1200 only has 4GB VRAM. This allows stuff to fit.
+    SD_ARGS="--skip-torch-cuda-test --xformers --lowvram"
+
+    if [[ $START_SD -eq 1 && $START_OLLAMA -eq 1 ]]; then
+        echo "WARNING: The video card on this machine is too weak to run both of these at once."
+        echo "         One will almost certainly fail to start. Proceeding anyway."
+    fi
+    
+elif [ $HOSTNAME == "bluebox" ]; then
+    echo "Running on bluebox, using that config."
+
+    # Platform specific stable diffusion arguments.
+    # --skip-torch-cuda-test - AMD GPU, fails this test.
+    SD_ARGS="--skip-torch-cuda-test"    
+else
+    echo "Unknown host, using default config."
+    SD_ARGS=""
+fi
+
+# send SIGINT (CTRL-C) to all subprocesses when this one exits.
+trap 'jobs -p | xargs kill -INT' EXIT
+
+# export everything we're about to set because, from here on, it's
+# configuration for what we are about to start.
 set -a
 
-# Start ollama backend
+if [ $START_OLLAMA -eq 1 ]; then
 
-# Ollama config
+    echo "Starting ollama on 127.0.0.1:11434"
 
-OLLAMA_HOST=127.0.0.1
-OLLAMA_MODELS=/home/matt/storage1/ai/ollama/models
-OLLAMA_KEEP_ALIVE=30m
+    # Ollama config
 
-# Start Ollama
-xterm -geometry 120x22+110+390 -e ${BASE_DIR}/ollama/bin/ollama serve &
+    OLLAMA_HOST=127.0.0.1
+    OLLAMA_MODELS=${OLLAMA_BASE_DIR}/models
+    OLLAMA_KEEP_ALIVE=30m
 
-# Start Stable Diffusion WebUI
+    # Start Ollama
+    xterm -geometry ${WINDOW1_GEOMETRY} -e ${OLLAMA_BASE_DIR}/bin/ollama serve &
 
-xterm -geometry 120x22+110+735 -e ${BASE_DIR}/stable-diffusion-webui/webui.sh --api --skip-torch-cuda-test &
+    echo "Starting open-webui on 127.0.0.1:8080"
 
-# Open-WebUI config
+    # Open-WebUI config
 
-# Most of the defaults are left at the defaults, unless I felt
-# particularly strongly about forcing them.
+    # Most of the defaults are left at the defaults, unless I felt
+    # particularly strongly about forcing them.
 
-ENV=dev
-# Single user mode, no auth
-WEBUI_AUTH=False
-# But only listen on localhost
-HOST=127.0.0.1
-DATA_DIR=${BASE_DIR}/open-webui-data
-FRONTEND_BUILD_DIR=${BASE_DIR}/open-webui/build
-STATIC_DIR=${BASE_DIR}/open-webui/static
-ENABLE_SIGNUP=False
-DEFAULT_MODELS="dolphin-llama3:latest"
-ENABLE_COMMUNITY_SHARING=False
-FUNCTIONS_DIR=${BASE_DIR}/open-webui-data/functions
-ADMIN_EMAIL=matt@mattcaron.net
-ENABLE_OLLAMA_API=True
-OLLAMA_BASE_URL=http://localhost:11434
-USE_OLLAMA_DOCKER=False
-ENABLE_OPENAI_API=False
-PDF_EXTRACT_IMAGES=True
-ENABLE_RAG_WEB_SEARCH=True
-ENABLE_SEARCH_QUERY=True
-RAG_WEB_SEARCH_ENGINE=duckduckgo
-ENABLE_IMAGE_GENERATION=True
-IMAGE_GENERATION_ENGINE=automatic1111
-AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
-IMAGE_GENERATION_MODEL=absolutereality_v181
-IMAGE_SIZE=512x512
-IMAGE_STEPS=20
+    ENV=dev
+    # Single user mode, no auth
+    WEBUI_AUTH=False
+    # But only listen on localhost
+    HOST=127.0.0.1
+    DATA_DIR=${BASE_DIR}/open-webui-data
+    FRONTEND_BUILD_DIR=${OPEN_WEBUI_BASE_DIR}/build
+    STATIC_DIR=${OPEN_WEBUI_BASE_DIR}/static
+    ENABLE_SIGNUP=False
+    DEFAULT_MODELS="dolphin-llama3:latest"
+    ENABLE_COMMUNITY_SHARING=False
+    FUNCTIONS_DIR=${BASE_DIR}/open-webui-data/functions
+    ENABLE_OLLAMA_API=True
+    OLLAMA_BASE_URL=http://localhost:11434
+    USE_OLLAMA_DOCKER=False
+    ENABLE_OPENAI_API=False
+    PDF_EXTRACT_IMAGES=True
+    ENABLE_RAG_WEB_SEARCH=True
+    ENABLE_SEARCH_QUERY=True
+    RAG_WEB_SEARCH_ENGINE=duckduckgo
 
-xterm -geometry 120x22+980+390 -e "source ${BASE_DIR}/open-webui/venv/bin/activate && ${BASE_DIR}/open-webui/backend/start.sh" &
+    if [ $START_SD -eq 1 ]; then
+        ENABLE_IMAGE_GENERATION=True
+        IMAGE_GENERATION_ENGINE=automatic1111
+        AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
+        IMAGE_GENERATION_MODEL=absolutereality_v181
+        IMAGE_SIZE=512x512
+        IMAGE_STEPS=20
+    fi
+
+    xterm -geometry ${WINDOW2_GEOMETRY} -e "source ${OPEN_WEBUI_BASE_DIR}/venv/bin/activate && ${OPEN_WEBUI_BASE_DIR}/backend/start.sh" &
+    
+fi
+
+if [ $START_SD -eq 1 ]; then
+    echo "Starting stable diffusion on 127.0.0.1:7860"
+
+    # Start Stable Diffusion WebUI
+
+    # Different machines need different venvs because they have different incompatible dependencies.
+    # I save space by only having the one for the given host present.
+    venv_dir=${SD_BASE_DIR}/venv.${HOSTNAME}
+    # Args:
+    # --api - expose the API so other services can talk to it.
+    xterm -geometry ${WINDOW3_GEOMETRY} -e ${SD_BASE_DIR}/webui.sh ${SD_ARGS} --api &
+fi
 
 # MusicGPT gets started here
-# xterm -geometry 120x22+980+735 
+# xterm -geometry ${WINDOW4_GEOMETRY}
+
+echo "Hit CTRL-C to kill all the AI things..."
+while true
+do
+    sleep 24h
+done
