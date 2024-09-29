@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# TODO - getopts
+# default starts Ollama/Open WebUI and not Stable Diffusion
+# --notext - don't fire up all the Ollama stuff
+# --images - fire up stable diffusion and enable Open WebUI integration
+
+# I have everything rooted under a single dir. Change if needed.
+BASE_DIR=/home/matt/storage1/ai
+
+# export everything we're about to set
+set -a
+
+# Start ollama backend
+
+# Ollama config
+
+OLLAMA_HOST=127.0.0.1
+OLLAMA_MODELS=/home/matt/storage1/ai/ollama/models
+OLLAMA_KEEP_ALIVE=30m
+
+# Start Ollama
+xterm -geometry 120x22+110+390 -e ${BASE_DIR}/ollama/bin/ollama serve &
+
+# Start Stable Diffusion WebUI
+
+xterm -geometry 120x22+110+735 -e ${BASE_DIR}/stable-diffusion-webui/webui.sh --api --skip-torch-cuda-test &
+
+# Open-WebUI config
+
+# Most of the defaults are left at the defaults, unless I felt
+# particularly strongly about forcing them.
+
+ENV=dev
+# Single user mode, no auth
+WEBUI_AUTH=False
+# But only listen on localhost
+HOST=127.0.0.1
+DATA_DIR=${BASE_DIR}/open-webui-data
+FRONTEND_BUILD_DIR=${BASE_DIR}/open-webui/build
+STATIC_DIR=${BASE_DIR}/open-webui/static
+ENABLE_SIGNUP=False
+DEFAULT_MODELS="dolphin-llama3:latest"
+ENABLE_COMMUNITY_SHARING=False
+FUNCTIONS_DIR=${BASE_DIR}/open-webui-data/functions
+ADMIN_EMAIL=matt@mattcaron.net
+ENABLE_OLLAMA_API=True
+OLLAMA_BASE_URL=http://localhost:11434
+USE_OLLAMA_DOCKER=False
+ENABLE_OPENAI_API=False
+PDF_EXTRACT_IMAGES=True
+ENABLE_RAG_WEB_SEARCH=True
+ENABLE_SEARCH_QUERY=True
+RAG_WEB_SEARCH_ENGINE=duckduckgo
+ENABLE_IMAGE_GENERATION=True
+IMAGE_GENERATION_ENGINE=automatic1111
+AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
+IMAGE_GENERATION_MODEL=absolutereality_v181
+IMAGE_SIZE=512x512
+IMAGE_STEPS=20
+
+xterm -geometry 120x22+980+390 -e "source ${BASE_DIR}/open-webui/venv/bin/activate && ${BASE_DIR}/open-webui/backend/start.sh" &
+
+# MusicGPT gets started here
+# xterm -geometry 120x22+980+735 
