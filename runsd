@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Run stable diffusion with proper local arguments
+
+# This is a separate file so we can just ssh in and run this one thing
+# for easy remote use.
+
+# Get our paths
+source `dirname $0`/ai_paths
+
+if [ $HOSTNAME == "hiro" ]; then
+    echo "Running on hiro, using that config."
+
+    # Platform specific stable diffusion arguments.
+    # --skip-torch-cuda-test - nVidia M1200. Too old, fails this test.
+    # --xformers - reduces memory usage (nVidia exclusive)
+    # --lowvram - M1200 only has 4GB VRAM. This allows stuff to fit.
+    SD_ARGS="--skip-torch-cuda-test --xformers --lowvram"
+    
+elif [ $HOSTNAME == "bluebox" ]; then
+    echo "Running on bluebox, using that config."
+
+    # Platform specific stable diffusion arguments.
+    # --skip-torch-cuda-test - AMD GPU, fails this test.
+    SD_ARGS="--skip-torch-cuda-test"    
+else
+    echo "Unknown host, using default config."
+    SD_ARGS=""
+fi
+
+# export everything we're about to set because, from here on, it's
+# configuration for what we are about to start.
+set -a
+
+# Different machines need different venvs because they have different incompatible dependencies.
+# I save space by only having the one for the given host present.
+venv_dir=${SD_BASE_DIR}/venv.${HOSTNAME}
+# Args:
+# --api - expose the API so other services can talk to it.
+${SD_BASE_DIR}/webui.sh ${SD_ARGS} --api

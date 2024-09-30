@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# I have everything rooted under a single dir. Change if needed.
+AI_BASE_DIR=/home/matt/storage1/ai
+SD_BASE_DIR=${AI_BASE_DIR}/stable-diffusion-webui
+OLLAMA_BASE_DIR=${AI_BASE_DIR}/ollama
+OPEN_WEBUI_BASE_DIR=${AI_BASE_DIR}/open-webui
+
+
