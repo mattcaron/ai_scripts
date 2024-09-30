@@ -20,6 +20,17 @@ WINDOW2_GEOMETRY="120x22+110+735"
 WINDOW3_GEOMETRY="120x22+980+390"
 WINDOW4_GEOMETRY="120x22+980+735"
 
+# Address of my desktop machine with the big GPU. Note that we
+# hardcode this in the run* configs, because those support lots of
+# machines. BUT, it's possible I build another machine and I want to
+# be able to change the remote target in a single place, hence this
+# variable.
+REMOTE_INSIDE_ADDRESS=bluebox
+
+# Address to get to bluebox from the world. This is a secret, so it's
+# not in the repo.
+REMOTE_OUTSIDE_ADDRESS=`cat ${HOME}/.bluebox_outside_address`
+
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
 PARSED_OPTIONS=$(getopt -n "$0" -o hniro --long "help,notext,images,remote-images,remote-ollama"  -- "$@")
@@ -86,10 +97,22 @@ if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
     exit 1
 fi
 
-# If any remote options are selected, preload my ssh key to save repetitive typing
-if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
-    ssh-add ~/.ssh/id_rsa
-fi
+# determine if we are inside our outside our home network
+
+are_we_inside() {
+    ping -q -c 1 ${REMOTE_INSIDE_ADDRESS} > /dev/null 2>&1 
+    # A 0 return code means a successful ping, therefore we are inside
+    if [ $? -eq 0 ]; then
+        echo "We are inside the house."
+        return 1
+    else
+        echo "We are outside the house."
+        return 0
+    fi
+}
+
+are_we_inside
+INSIDE=$?
 
 HOSTNAME=`hostname`
 
@@ -113,9 +136,13 @@ shutdown() {
    jobs -p | xargs kill -INT
 }
 
-
 # send SIGINT (CTRL-C) to all subprocesses when this one exits.
 trap 'shutdown' EXIT
+
+# If any remote options are selected, preload my ssh key to save repetitive typing
+if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
+    ssh-add ~/.ssh/id_rsa
+fi
 
 # export everything we're about to set because, from here on, it's
 # configuration for what we are about to start.
@@ -124,8 +151,14 @@ set -a
 if [ $START_OLLAMA -eq 1 ]; then
 
     if [ $REMOTE_OLLAMA -eq 1 ]; then
-        echo "Starting remote ollama on 127.0.0.1:11434"
-        xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 bluebox 'runollama'" &
+        if [ $INSIDE -eq 1 ]; then
+            echo "Starting remote ollama on 127.0.0.1:11434"
+            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} 'runollama'" &
+        else
+            echo "Starting remote ollama on 127.0.0.1:11434 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} runollama'" &
+        fi
+        
     else
         echo "Starting local ollama on 127.0.0.1:11434"
         xterm -geometry ${WINDOW1_GEOMETRY} -e runollama  &
@@ -188,8 +221,13 @@ if [ $START_SD -eq 1 ]; then
 fi
 
 if [ $REMOTE_SD -eq 1 ]; then
-    echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860"
-    xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 bluebox 'runsd'" &
+    if [ $INSIDE -eq 1 ]; then
+        echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860"
+        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} 'runsd'" &
+    else
+        echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} runsd'" &
+    fi
 fi
 
 # MusicGPT gets started here
