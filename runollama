@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Run ollama with proper local arguments
+
+# This is a separate file so we can just ssh in and run this one thing
+# for easy remote use.
+
+# Get our paths
+source `dirname $0`/ai_paths
+
+if [ $HOSTNAME == "hiro" ]; then
+echo "Running on hiro, using that config."
+
+# This machine's GPU is super slow, so use a lean and fast model.
+# TODO - once an uncensored version if this is out, use it.
+DEFAULT_OLLAMA_MODELS="llama3.2:1b"
+elif [ $HOSTNAME == "bluebox" ]; then
+echo "Running on bluebox, using that config."
+
+# My preferred uncensored model.
+DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
+else
+echo "Unknown host, using default config."
+SD_ARGS=""
+fi
+
+# export everything we're about to set because, from here on, it's
+# configuration for what we are about to start.
+set -a
+
+# Ollama config
+
+OLLAMA_HOST=127.0.0.1
+OLLAMA_MODELS=${OLLAMA_BASE_DIR}/models
+OLLAMA_KEEP_ALIVE=30m
+
+
+# Start Ollama
+${OLLAMA_BASE_DIR}/bin/ollama serve
+

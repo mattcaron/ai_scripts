@@ -9,6 +9,7 @@
 START_OLLAMA=1
 START_SD=0
 REMOTE_SD=0
+REMOTE_OLLAMA=0
 
 # Get our paths
 source `dirname $0`/ai_paths
@@ -21,7 +22,7 @@ WINDOW4_GEOMETRY="120x22+980+735"
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hnir --long "help,notext,images,remote-images"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o hniro --long "help,notext,images,remote-images,remote-ollama"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -65,6 +66,10 @@ do
             REMOTE_SD=1
             shift;;
 
+        -o|--remote-ollama)
+            REMOTE_OLLAMA=1
+            shift;;
+
         --)
             shift
             break;;
@@ -90,17 +95,8 @@ if [ $HOSTNAME == "hiro" ]; then
         echo "WARNING: The video card on this machine is too weak to run both of these at once."
         echo "         One will almost certainly fail to start. Proceeding anyway."
     fi
-
-    # This machine's GPU is super slow, so use a lean and fast model.
-    # TODO - once an uncensored version if this is out, use it.
-    DEFAULT_OLLAMA_MODELS="llama3.2:1b"
-    
 elif [ $HOSTNAME == "bluebox" ]; then
     echo "Running on bluebox, using that config."
-
-    # My preferred uncensored model.
-    DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
-
 else
     echo "Unknown host, using default config."
 fi
@@ -114,16 +110,13 @@ set -a
 
 if [ $START_OLLAMA -eq 1 ]; then
 
-    echo "Starting ollama on 127.0.0.1:11434"
-
-    # Ollama config
-
-    OLLAMA_HOST=127.0.0.1
-    OLLAMA_MODELS=${OLLAMA_BASE_DIR}/models
-    OLLAMA_KEEP_ALIVE=30m
-
-    # Start Ollama
-    xterm -geometry ${WINDOW1_GEOMETRY} -e ${OLLAMA_BASE_DIR}/bin/ollama serve &
+    if [ $REMOTE_OLLAMA -eq 1 ]; then
+        echo "Starting remote ollama on 127.0.0.1:11434"
+        xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 bluebox 'runollama'" &
+    else
+        echo "Starting local ollama on 127.0.0.1:11434"
+        xterm -geometry ${WINDOW1_GEOMETRY} -e runollama  &
+    fi
 
     echo "Starting open-webui on 127.0.0.1:8080"
 
