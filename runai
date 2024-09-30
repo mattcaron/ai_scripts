@@ -10,6 +10,7 @@ START_OLLAMA=1
 START_SD=0
 REMOTE_SD=0
 REMOTE_OLLAMA=0
+START_REMOTES=1
 
 # Get our paths
 source `dirname $0`/ai_paths
@@ -33,7 +34,7 @@ REMOTE_OUTSIDE_ADDRESS=`cat ${HOME}/.bluebox_outside_address`
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hniro --long "help,notext,images,remote-images,remote-ollama"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o hniros --long "help,notext,images,remote-images,remote-ollama,no-remote-start"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -81,6 +82,10 @@ do
             REMOTE_OLLAMA=1
             shift;;
 
+        -s|--no-remote-start)
+            START_REMOTES=0
+            shift;;
+
         --)
             shift
             break;;
@@ -107,6 +112,8 @@ are_we_inside() {
         return 1
     else
         echo "We are outside the house."
+        echo "WARNING: Services started via jumphost tend to remain running when we close the connection on our end."
+        echo "You will need to ssh in and kill them manually."
         return 0
     fi
 }
@@ -151,12 +158,19 @@ set -a
 if [ $START_OLLAMA -eq 1 ]; then
 
     if [ $REMOTE_OLLAMA -eq 1 ]; then
+
+        if [ $START_REMOTES -eq 1 ]; then
+            OLLAMA_CMD="runollama"
+        else
+            OLLAMA_CMD=""
+        fi
+        
         if [ $INSIDE -eq 1 ]; then
             echo "Starting remote ollama on 127.0.0.1:11434"
-            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} 'runollama'" &
+            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} '${OLLAMA_CMD}'" &
         else
             echo "Starting remote ollama on 127.0.0.1:11434 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
-            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} runollama'" &
+            xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} ${OLLAMA_CMD}'" &
         fi
         
     else
@@ -221,12 +235,18 @@ if [ $START_SD -eq 1 ]; then
 fi
 
 if [ $REMOTE_SD -eq 1 ]; then
+        if [ $START_REMOTES -eq 1 ]; then
+            SD_CMD="runsd"
+        else
+            SD__CMD=""
+        fi
+    
     if [ $INSIDE -eq 1 ]; then
         echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860"
-        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} 'runsd'" &
+        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} '${SD_CMD}'" &
     else
         echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
-        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} runsd'" &
+        xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} ${SD_CMD}'" &
     fi
 fi
 
