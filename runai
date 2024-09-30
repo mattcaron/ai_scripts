@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Args:
-# --notext - don't fire up all the Ollama stuff
-# --images - fire up stable diffusion and enable Open WebUI integration
-# --remote-images - use config to connect to bluebox for stable diffusion, rather than locally
-
 # Default is to just start Ollama and not Stable Diffusion
 START_OLLAMA=1
 START_SD=0
@@ -58,11 +53,15 @@ do
         -h|--help)
             echo "Usage $0 [options]"
             echo ""
-            echo "With no options supplied, it only starts  ollama and open-webui."
+            echo "With no options supplied, it only starts ollama and open-webui."
             echo ""
             echo "Options:"
+            echo "    --help = print this help"
             echo "    --notext = don't run ollama and open-webui"
             echo "    --images = run stable diffusion"
+            echo "    --remote-images = start and then connect to a remote image server"
+            echo "    --remote-ollama = start and then connect to a remote ollama server"
+            echo "    --no-remote-start = don't start the above two remote server, just connect to existing instances"
             exit 0
             shift;;
         
