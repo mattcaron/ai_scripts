@@ -90,9 +90,16 @@ if [ $HOSTNAME == "hiro" ]; then
         echo "WARNING: The video card on this machine is too weak to run both of these at once."
         echo "         One will almost certainly fail to start. Proceeding anyway."
     fi
+
+    # This machine's GPU is super slow, so use a lean and fast model.
+    # TODO - once an uncensored version if this is out, use it.
+    DEFAULT_OLLAMA_MODELS="llama3.2:1b"
     
 elif [ $HOSTNAME == "bluebox" ]; then
     echo "Running on bluebox, using that config."
+
+    # My preferred uncensored model.
+    DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
 
 else
     echo "Unknown host, using default config."
@@ -134,8 +141,16 @@ if [ $START_OLLAMA -eq 1 ]; then
     FRONTEND_BUILD_DIR=${OPEN_WEBUI_BASE_DIR}/build
     STATIC_DIR=${OPEN_WEBUI_BASE_DIR}/static
     ENABLE_SIGNUP=False
-    DEFAULT_MODELS="dolphin-llama3:latest"
+    DEFAULT_MODELS=${DEFAULT_OLLAMA_MODELS}
     ENABLE_COMMUNITY_SHARING=False
+
+    # We use machine specific databases to reduce sync conflicts. All
+    # DBs are synced, however, so:
+    #   1. They're backed up, so no data should ever be lost.
+    #   2. If I ever want to get at the data, I can always hardcode
+    #      this to some DB and interact with it.
+    DATABASE_URL=sqlite:///${DATA_DIR}/webui-${HOSTNAME}.db
+    
     FUNCTIONS_DIR=${AI_BASE_DIR}/open-webui-data/functions
     ENABLE_OLLAMA_API=True
     OLLAMA_BASE_URL=http://localhost:11434
