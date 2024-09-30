@@ -86,6 +86,11 @@ if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
     exit 1
 fi
 
+# If any remote options are selected, preload my ssh key to save repetitive typing
+if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
+    ssh-add ~/.ssh/id_rsa
+fi
+
 HOSTNAME=`hostname`
 
 if [ $HOSTNAME == "hiro" ]; then
@@ -101,8 +106,16 @@ else
     echo "Unknown host, using default config."
 fi
 
+shutdown() {
+   if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
+    ssh-add -d ~/.ssh/id_rsa
+   fi
+   jobs -p | xargs kill -INT
+}
+
+
 # send SIGINT (CTRL-C) to all subprocesses when this one exits.
-trap 'jobs -p | xargs kill -INT' EXIT
+trap 'shutdown' EXIT
 
 # export everything we're about to set because, from here on, it's
 # configuration for what we are about to start.
