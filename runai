@@ -3,10 +3,12 @@
 # Args:
 # --notext - don't fire up all the Ollama stuff
 # --images - fire up stable diffusion and enable Open WebUI integration
+# --remote-images - use config to connect to bluebox for stable diffusion, rather than locally
 
 # Default is to just start Ollama and not Stable Diffusion
 START_OLLAMA=1
 START_SD=0
+REMOTE_SD=0
 
 # Get our paths
 source `dirname $0`/ai_paths
@@ -19,7 +21,7 @@ WINDOW4_GEOMETRY="120x22+980+735"
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hni --long "help,notext,images"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o hnir --long "help,notext,images,remote-images"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -59,17 +61,26 @@ do
             START_SD=1
             shift;;
 
+        -r|--remote-images)
+            REMOTE_SD=1
+            shift;;
+
         --)
             shift
             break;;
     esac
 done
 
-if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 ]]; then   
+if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 ]]; then   
     echo "Warning: Options selected result in a no-op. Doing nothing as requested."
     exit 0
 fi
-   
+
+if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
+    echo "ERROR: Incorrect arguments - we cannot use both local and remote stable diffusion."
+    exit 1
+fi
+
 HOSTNAME=`hostname`
 
 if [ $HOSTNAME == "hiro" ]; then
@@ -135,7 +146,9 @@ if [ $START_OLLAMA -eq 1 ]; then
     ENABLE_SEARCH_QUERY=True
     RAG_WEB_SEARCH_ENGINE=duckduckgo
 
-    if [ $START_SD -eq 1 ]; then
+    # Despite the name, remote SD connections look local because
+    # they're accomplished via an SSH tunnel.
+    if [[ $START_SD -eq 1 || $REMOTE_SD -eq 1 ]]; then
         ENABLE_IMAGE_GENERATION=True
         IMAGE_GENERATION_ENGINE=automatic1111
         AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
@@ -149,10 +162,13 @@ if [ $START_OLLAMA -eq 1 ]; then
 fi
 
 if [ $START_SD -eq 1 ]; then
-    echo "Starting stable diffusion on 127.0.0.1:7860"
-
-    # Start Stable Diffusion WebUI
+    echo "Starting local stable diffusion on 127.0.0.1:7860"
     xterm -geometry ${WINDOW3_GEOMETRY} -e runsd &
+fi
+
+if [ $REMOTE_SD -eq 1 ]; then
+    echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860"
+    xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 bluebox 'runsd'" &
 fi
 
 # MusicGPT gets started here
