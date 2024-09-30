@@ -129,8 +129,15 @@ if [ $HOSTNAME == "hiro" ]; then
         echo "WARNING: The video card on this machine is too weak to run both of these at once."
         echo "         One will almost certainly fail to start. Proceeding anyway."
     fi
+
+    # This machine's GPU is super slow, so use a lean and fast model.
+    # TODO - once an uncensored version if this is out, use it.
+    DEFAULT_OLLAMA_MODELS="llama3.2:1b"
 elif [ $HOSTNAME == "bluebox" ]; then
     echo "Running on bluebox, using that config."
+
+    # My preferred uncensored model.
+    DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
 else
     echo "Unknown host, using default config."
 fi
