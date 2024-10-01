@@ -117,8 +117,13 @@ are_we_inside() {
     fi
 }
 
-are_we_inside
-INSIDE=$?
+# Only check to see if we're inside if a remote option was selected.
+if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 ]]; then
+    are_we_inside
+    INSIDE=$?
+else
+    INSIDE=1
+fi
 
 HOSTNAME=`hostname`
 
