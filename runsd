@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run stable diffusion with proper local arguments
+# Run Stable Diffusion with proper local arguments
 
 # This is a separate file so we can just ssh in and run this one thing
 # for easy remote use.
