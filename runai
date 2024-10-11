@@ -1,11 +1,13 @@
 #!/bin/bash
 
-# Default is to just start Ollama and not Stable Diffusion
+# Default is to just start Ollama and not Stable Diffusion or MusicGPT
 START_OLLAMA=1
 START_SD=0
 REMOTE_SD=0
 REMOTE_OLLAMA=0
 START_REMOTES=1
+START_MUSICGPT=0
+REMOTE_MUSICGPT=0
 
 # Get our paths
 source `dirname $0`/ai_paths
@@ -29,7 +31,7 @@ REMOTE_OUTSIDE_ADDRESS=`cat ${HOME}/.bluebox_outside_address`
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hniros --long "help,notext,images,remote-images,remote-ollama,no-remote-start"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o hniros --long "help,notext,images,remote-images,remote-ollama,music,remote-music,no-remote-start"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -61,7 +63,9 @@ do
             echo "    --images = run Stable Diffusion"
             echo "    --remote-images = start and then connect to a remote Stable Diffusion server"
             echo "    --remote-ollama = start and then connect to a remote Ollama server"
-            echo "    --no-remote-start = don't start the above two remote server, just connect to existing instances"
+            echo "    --music = run MusicGPT"
+            echo "    --remote-music = start and then connect to a remote MusicGPT server"
+            echo "    --no-remote-start = don't start the above three remote servers, just connect to existing instances"
             exit 0
             shift;;
         
@@ -85,6 +89,14 @@ do
             START_REMOTES=0
             shift;;
 
+        -m|--music)
+            START_MUSICGPT=1
+            shift;;
+
+        -c|--remote-music)
+            REMOTE_MUSICGPT=1
+            shift;;
+
         --)
             shift
             break;;
@@ -98,6 +110,11 @@ fi
 
 if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
     echo "ERROR: Incorrect arguments - we cannot use both local and remote Stable Diffusion."
+    exit 1
+fi
+
+if [[ $START_MUSICGPT -eq 1 && $REMOTE_MUSICGPT -eq 1 ]]; then
+    echo "ERROR: Incorrect arguments - we cannot use both local and remote MusicGPT."
     exit 1
 fi
 
@@ -118,7 +135,7 @@ are_we_inside() {
 }
 
 # Only check to see if we're inside if a remote option was selected.
-if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 ]]; then
+if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
     are_we_inside
     INSIDE=$?
 else
@@ -148,7 +165,7 @@ else
 fi
 
 shutdown() {
-   if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
+   if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
     ssh-add -d ~/.ssh/id_rsa
    fi
    jobs -p | xargs kill -INT
@@ -158,7 +175,7 @@ shutdown() {
 trap 'shutdown' EXIT
 
 # If any remote options are selected, preload my ssh key to save repetitive typing
-if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 ]]; then
+if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
     ssh-add ~/.ssh/id_rsa
 fi
 
@@ -253,16 +270,34 @@ if [ $REMOTE_SD -eq 1 ]; then
         fi
     
     if [ $INSIDE -eq 1 ]; then
-        echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860"
+        echo "Starting remote Stable Diffusion forwarded to 127.0.0.1:7860"
         xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} '${SD_CMD}'" &
     else
-        echo "Starting remote stable diffusion forwarded to 127.0.0.1:7860 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+        echo "Starting remote Stable Diffusion forwarded to 127.0.0.1:7860 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
         xterm -geometry ${WINDOW3_GEOMETRY} -e "ssh -t -L 7860:localhost:7860 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 7860:localhost:7860 ${REMOTE_INSIDE_ADDRESS} ${SD_CMD}'" &
     fi
 fi
 
-# MusicGPT gets started here
-# xterm -geometry ${WINDOW4_GEOMETRY}
+if [ $START_MUSICGPT -eq 1 ]; then
+    echo "Starting local MusicGPT on  http://localhost:8642"
+    xterm -geometry ${WINDOW4_GEOMETRY} -e runmusicgpt &
+fi
+
+if [ $REMOTE_MUSICGPT -eq 1 ]; then
+        if [ $START_REMOTES -eq 1 ]; then
+            MUSICGPT_CMD="runmusicgpt"
+        else
+            MUSICGPT_CMD=""
+        fi
+
+    if [ $INSIDE -eq 1 ]; then
+        echo "Starting remote MusicGPT forwarded to 127.0.0.1:8642"
+        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 8642:localhost:8642 ${REMOTE_INSIDE_ADDRESS} '${MUSICGPT_CMD}'" &
+    else
+        echo "Starting remote stable diffusion forwarded to 127.0.0.1:8642 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 8642:localhost:8642 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8642:localhost:8642 ${REMOTE_INSIDE_ADDRESS} ${MUSICGPT_CMD}'" &
+    fi
+fi
 
 echo "Hit CTRL-C to kill all the AI things..."
 while true
