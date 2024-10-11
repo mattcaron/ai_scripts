@@ -57,10 +57,10 @@ do
             echo ""
             echo "Options:"
             echo "    --help = print this help"
-            echo "    --notext = don't run ollama and open-webui"
-            echo "    --images = run stable diffusion"
-            echo "    --remote-images = start and then connect to a remote image server"
-            echo "    --remote-ollama = start and then connect to a remote ollama server"
+            echo "    --notext = don't run Ollama and Open-Webui"
+            echo "    --images = run Stable Diffusion"
+            echo "    --remote-images = start and then connect to a remote Stable Diffusion server"
+            echo "    --remote-ollama = start and then connect to a remote Ollama server"
             echo "    --no-remote-start = don't start the above two remote server, just connect to existing instances"
             exit 0
             shift;;
@@ -97,7 +97,7 @@ if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 ]]; then
 fi
 
 if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
-    echo "ERROR: Incorrect arguments - we cannot use both local and remote stable diffusion."
+    echo "ERROR: Incorrect arguments - we cannot use both local and remote Stable Diffusion."
     exit 1
 fi
 
@@ -241,7 +241,7 @@ if [ $START_OLLAMA -eq 1 ]; then
 fi
 
 if [ $START_SD -eq 1 ]; then
-    echo "Starting local stable diffusion on 127.0.0.1:7860"
+    echo "Starting local Stable Diffusion on 127.0.0.1:7860"
     xterm -geometry ${WINDOW3_GEOMETRY} -e runsd &
 fi
 
