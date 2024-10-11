@@ -18,6 +18,8 @@ OLLAMA_HOST=127.0.0.1
 OLLAMA_MODELS=${OLLAMA_BASE_DIR}/models
 OLLAMA_KEEP_ALIVE=30m
 
+# Required for ThunderAI to use local OLLAMA
+OLLAMA_ORIGINS=moz-extension://*
 
 # Start Ollama
 ${OLLAMA_BASE_DIR}/bin/ollama serve
