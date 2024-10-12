@@ -5,6 +5,7 @@ START_OLLAMA=1
 START_SD=0
 REMOTE_SD=0
 REMOTE_OLLAMA=0
+REMOTE_OPENWEBUI=0
 START_REMOTES=1
 START_MUSICGPT=0
 REMOTE_MUSICGPT=0
@@ -31,7 +32,7 @@ REMOTE_OUTSIDE_ADDRESS=`cat ${HOME}/.bluebox_outside_address`
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hniros --long "help,notext,images,remote-images,remote-ollama,music,remote-music,no-remote-start"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o hnirosmcu --long "help,notext,images,remote-images,remote-ollama,remote-openwebui,music,remote-music,no-remote-start"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -42,7 +43,7 @@ fi
 # A little magic, necessary when using getopt.
 eval set -- "$PARSED_OPTIONS"
 
-# Now goes through all the options with a case and using shift to
+# Now go through all the options with a case and using shift to
 # analyse 1 argument at a time.
 #
 # $1 identifies the first argument, and when we use shift we discard
@@ -63,6 +64,7 @@ do
             echo "    --images = run Stable Diffusion"
             echo "    --remote-images = start and then connect to a remote Stable Diffusion server"
             echo "    --remote-ollama = start and then connect to a remote Ollama server"
+            echo "    --remote-openwebui = start and then connect to a remote Open WebUi server"
             echo "    --music = run MusicGPT"
             echo "    --remote-music = start and then connect to a remote MusicGPT server"
             echo "    --no-remote-start = don't start the above three remote servers, just connect to existing instances"
@@ -85,6 +87,10 @@ do
             REMOTE_OLLAMA=1
             shift;;
 
+        -u|--remote-openwebui)
+            REMOTE_OPENWEBUI=1
+            shift;;
+
         -s|--no-remote-start)
             START_REMOTES=0
             shift;;
@@ -103,7 +109,7 @@ do
     esac
 done
 
-if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 ]]; then   
+if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 && $START_MUSICGPT -eq 0 && $REMOTE_MUSICGPT -eq 0 ]]; then   
     echo "Warning: Options selected result in a no-op. Doing nothing as requested."
     exit 0
 fi
@@ -135,7 +141,7 @@ are_we_inside() {
 }
 
 # Only check to see if we're inside if a remote option was selected.
-if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
+if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 || $REMOTE_OPENWEBUI -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
     are_we_inside
     INSIDE=$?
 else
@@ -194,67 +200,43 @@ if [ $START_OLLAMA -eq 1 ]; then
         fi
         
         if [ $INSIDE -eq 1 ]; then
-            echo "Starting remote ollama on 127.0.0.1:11434"
+            echo "Starting remote Ollama on 127.0.0.1:11434"
             xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} '${OLLAMA_CMD}'" &
         else
-            echo "Starting remote ollama on 127.0.0.1:11434 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+            echo "Starting remote Ollama on 127.0.0.1:11434 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
             xterm -geometry ${WINDOW1_GEOMETRY} -e "ssh -t -L 11434:localhost:11434 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 11434:localhost:11434 ${REMOTE_INSIDE_ADDRESS} ${OLLAMA_CMD}'" &
         fi
         
     else
-        echo "Starting local ollama on 127.0.0.1:11434"
+        echo "Starting local Ollama on 127.0.0.1:11434"
         xterm -geometry ${WINDOW1_GEOMETRY} -e runollama  &
     fi
 
-    echo "Starting open-webui on 127.0.0.1:8080"
-
-    # Open-WebUI config
-
-    # Most of the defaults are left at the defaults, unless I felt
-    # particularly strongly about forcing them.
-
-    ENV=dev
-    # Single user mode, no auth
-    WEBUI_AUTH=False
-    # But only listen on localhost
-    HOST=127.0.0.1
-    DATA_DIR=${AI_BASE_DIR}/open-webui-data
-    FRONTEND_BUILD_DIR=${OPEN_WEBUI_BASE_DIR}/build
-    STATIC_DIR=${OPEN_WEBUI_BASE_DIR}/static
-    ENABLE_SIGNUP=False
-    DEFAULT_MODELS=${DEFAULT_OLLAMA_MODELS}
-    ENABLE_COMMUNITY_SHARING=False
-
-    # We use machine specific databases to reduce sync conflicts. All
-    # DBs are synced, however, so:
-    #   1. They're backed up, so no data should ever be lost.
-    #   2. If I ever want to get at the data, I can always hardcode
-    #      this to some DB and interact with it.
-    DATABASE_URL=sqlite:///${DATA_DIR}/webui-${HOSTNAME}.db
-    
-    FUNCTIONS_DIR=${AI_BASE_DIR}/open-webui-data/functions
-    ENABLE_OLLAMA_API=True
-    OLLAMA_BASE_URL=http://localhost:11434
-    USE_OLLAMA_DOCKER=False
-    ENABLE_OPENAI_API=False
-    PDF_EXTRACT_IMAGES=True
-    ENABLE_RAG_WEB_SEARCH=True
-    ENABLE_SEARCH_QUERY=True
-    RAG_WEB_SEARCH_ENGINE=duckduckgo
-
-    # Despite the name, remote SD connections look local because
-    # they're accomplished via an SSH tunnel.
+    OPENWEBUI_ARGS=""
     if [[ $START_SD -eq 1 || $REMOTE_SD -eq 1 ]]; then
-        ENABLE_IMAGE_GENERATION=True
-        IMAGE_GENERATION_ENGINE=automatic1111
-        AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
-        IMAGE_GENERATION_MODEL=absolutereality_v181
-        IMAGE_SIZE=512x512
-        IMAGE_STEPS=20
+        OPENWEBUI_ARGS="--stable-diffusion"
     fi
 
-    xterm -geometry ${WINDOW2_GEOMETRY} -e "source ${OPEN_WEBUI_BASE_DIR}/venv/bin/activate && ${OPEN_WEBUI_BASE_DIR}/backend/start.sh" &
-    
+    if [ $REMOTE_OPENWEBUI -eq 1 ]; then
+
+        if [ $START_REMOTES -eq 1 ]; then
+            OPENWEBUI_CMD="runopenwebui ${OPENWEBUI_ARGS}"
+        else
+            OPENWEBUI_CMD=""
+        fi
+        
+        if [ $INSIDE -eq 1 ]; then
+            echo "Starting remote Open WebUI on 127.0.0.1:8080"
+            xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} '${OPENWEBUI_CMD}'" &
+        else
+            echo "Starting remote Open WebUI on 127.0.0.1:8080 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+            xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} ${OPENWEBUI_CMD}'" &
+        fi
+        
+    else
+        echo "Starting local Open WebUI on 127.0.0.1:8080"
+        xterm -geometry ${WINDOW2_GEOMETRY} -e runopenwebui ${OPENWEBUI_ARGS}  &
+    fi
 fi
 
 if [ $START_SD -eq 1 ]; then

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Run Open WebUI with proper local arguments
+
+# This is a separate file so we can just ssh in and run this one thing
+# for easy remote use.
+
+# Get our paths
+source `dirname $0`/ai_paths
+
+# Whether or not to hook up stable diffusion
+SD=0
+
+# Execute getopt on the arguments passed to this program, identified
+# by the special character $@
+PARSED_OPTIONS=$(getopt -n "$0" -o s --long "stable-diffusion"  -- "$@")
+
+# Bad arguments, something has gone wrong with the getopt command.
+if [ $? -ne 0 ]; then
+    echo "Failed to parse arguments, exiting."
+    exit 1
+fi
+
+# A little magic, necessary when using getopt.
+eval set -- "$PARSED_OPTIONS"
+
+# Now go through all the options with a case and using shift to
+# analyse 1 argument at a time.
+#
+# $1 identifies the first argument, and when we use shift we discard
+# the first argument, so $2 becomes $1 and goes again through the
+# case.
+while true
+do
+    case "$1" in
+
+        -s|--stable-diffusion)
+            SD=1
+            shift;;
+
+        --)
+            shift
+            break;;
+    esac
+done
+
+# export everything we're about to set because, from here on, it's
+# configuration for what we are about to start.
+set -a
+
+# Open-WebUI config
+
+# Most of the defaults are left at the defaults, unless I felt
+# particularly strongly about forcing them.
+
+ENV=dev
+# Single user mode, no auth
+WEBUI_AUTH=False
+# But only listen on localhost
+HOST=127.0.0.1
+DATA_DIR=${AI_BASE_DIR}/open-webui-data
+FRONTEND_BUILD_DIR=${OPEN_WEBUI_BASE_DIR}/build
+STATIC_DIR=${OPEN_WEBUI_BASE_DIR}/static
+ENABLE_SIGNUP=False
+DEFAULT_MODELS=${DEFAULT_OLLAMA_MODELS}
+ENABLE_COMMUNITY_SHARING=False
+
+# We use machine specific databases to reduce sync conflicts. All
+# DBs are synced, however, so:
+#   1. They're backed up, so no data should ever be lost.
+#   2. If I ever want to get at the data, I can always hardcode
+#      this to some DB and interact with it.
+DATABASE_URL=sqlite:///${DATA_DIR}/webui-${HOSTNAME}.db
+
+FUNCTIONS_DIR=${AI_BASE_DIR}/open-webui-data/functions
+ENABLE_OLLAMA_API=True
+OLLAMA_BASE_URL=http://localhost:11434
+USE_OLLAMA_DOCKER=False
+ENABLE_OPENAI_API=False
+PDF_EXTRACT_IMAGES=True
+ENABLE_RAG_WEB_SEARCH=True
+ENABLE_SEARCH_QUERY=True
+RAG_WEB_SEARCH_ENGINE=duckduckgo
+
+# Despite the name, remote SD connections look local because
+# they're accomplished via an SSH tunnel.
+if [[ $SD -eq 1 ]]; then
+    ENABLE_IMAGE_GENERATION=True
+    IMAGE_GENERATION_ENGINE=automatic1111
+    AUTOMATIC1111_BASE_URL=http://127.0.0.1:7860
+    IMAGE_GENERATION_MODEL=absolutereality_v181
+    IMAGE_SIZE=512x512
+    IMAGE_STEPS=20
+fi
+
+source ${OPEN_WEBUI_BASE_DIR}/venv/bin/activate && ${OPEN_WEBUI_BASE_DIR}/backend/start.sh
