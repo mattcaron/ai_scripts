@@ -22,7 +22,7 @@ elif [ $HOSTNAME == "bluebox" ]; then
 
     # Platform specific stable diffusion arguments.
     # --skip-torch-cuda-test - AMD GPU, fails this test.
-    SD_ARGS="--skip-torch-cuda-test"    
+    SD_ARGS="--skip-torch-cuda-test --medvram"
 else
     echo "Unknown host, using default config."
     SD_ARGS=""
