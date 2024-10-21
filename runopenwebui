@@ -44,6 +44,23 @@ do
     esac
 done
 
+HOSTNAME=`hostname`
+
+if [ $HOSTNAME == "hiro" ]; then
+    echo "Running on hiro, using that config."
+
+    # This machine's GPU is super slow, so use a lean and fast model.
+    # TODO - once an uncensored version if this is out, use it.
+    DEFAULT_OLLAMA_MODELS="llama3.2:1b"
+elif [ $HOSTNAME == "bluebox" ]; then
+    echo "Running on bluebox, using that config."
+
+    # My preferred uncensored model.
+    DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
+else
+    echo "Unknown host, using default config."
+fi
+
 # export everything we're about to set because, from here on, it's
 # configuration for what we are about to start.
 set -a
