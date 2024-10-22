@@ -97,7 +97,13 @@ ENABLE_OPENAI_API=False
 PDF_EXTRACT_IMAGES=True
 ENABLE_RAG_WEB_SEARCH=True
 ENABLE_SEARCH_QUERY=True
-RAG_WEB_SEARCH_ENGINE=duckduckgo
+# DuckDuckGo is rate limiting, switching to Tavily, which has a free
+# tier API which is request, but not rate, limited.
+# RAG_WEB_SEARCH_ENGINE=duckduckgo
+RAG_WEB_SEARCH_ENGINE=tavily
+TAVILY_API_KEY=`cat ${HOME}/.tavily_api_key`
+
+echo "Using Tavily API key: ${TAVILY_API_KEY}"
 
 # Despite the name, remote SD connections look local because
 # they're accomplished via an SSH tunnel.
