@@ -1,0 +1,12 @@
+#!/bin/bash
+
+AUTO_SUBTITLE_DIR=/home/matt/storage1/ai/auto-subtitle
+MODEL=large-v3
+
+VIDEO=$1
+
+SRT="${VIDEO%.*}".srt
+
+source ${AUTO_SUBTITLE_DIR}/venv/bin/activate
+auto_subtitle --model ${MODEL} --srt_only true --output_srt true $VIDEO
+deactivate
