@@ -56,7 +56,7 @@ elif [ $HOSTNAME == "bluebox" ]; then
     echo "Running on bluebox, using that config."
 
     # My preferred uncensored model.
-    DEFAULT_OLLAMA_MODELS="dolphin-llama3:latest"
+    DEFAULT_OLLAMA_MODELS="dolphin3:latest"
 else
     echo "Unknown host, using default config."
 fi
