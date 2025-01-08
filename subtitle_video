@@ -8,5 +8,5 @@ VIDEO=$1
 SRT="${VIDEO%.*}".srt
 
 source ${AUTO_SUBTITLE_DIR}/venv/bin/activate
-auto_subtitle --model ${MODEL} --srt_only true --output_srt true $VIDEO
+auto_subtitle --model ${MODEL} --language en --srt_only true --output_srt true $VIDEO
 deactivate
