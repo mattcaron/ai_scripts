@@ -8,6 +8,8 @@
 # Get our paths
 source `dirname $0`/ai_paths
 
+DATA_ARGS="--data-path ${MUSICGPT_STORAGE}"
+
 if [ $HOSTNAME == "hiro" ]; then
     echo "Running on hiro, using that config."
 
@@ -28,4 +30,4 @@ set -a
 
 # Args:
 # --api - expose the API so other services can talk to it.
-musicgpt ${MUSICGPT_ARGS} --ui-no-open
+musicgpt ${DATA_ARGS} ${MUSICGPT_ARGS} --ui-no-open
