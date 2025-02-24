@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Run MusicGPT in CLI mode generating a batch of output.
+
+# Number of files to generate
+ITERATIONS=10
+
+PROMPT="${@}"
+
+# Get our paths
+source `dirname $0`/ai_paths
+
+OUTPUT_DIR="./musicgpt-generated.`date +%F-%R:%S`"
+
+DATA_ARGS="--data-path ${MUSICGPT_STORAGE}"
+
+# We always generate 30 second segments and will review them
+# afterwards.
+CLI_ARGS="--secs 30 --no-playback --no-interactive"
+
+if [ $HOSTNAME == "hiro" ]; then
+    echo "Running on hiro, using that config."
+
+    MUSICGPT_ARGS="--model small ${CLI_ARGS}"
+    
+elif [ $HOSTNAME == "bluebox" ]; then
+    echo "Running on bluebox, using that config."
+
+    MUSICGPT_ARGS="--model medium ${CLI_ARGS}"
+else
+    echo "Unknown host, using default config."
+    SD_ARGS=""
+fi
+
+mkdir $OUTPUT_DIR
+echo "${PROMPT}" > $OUTPUT_DIR/prompt.txt
+
+if [ "$?" -eq "0" ]; then
+    for i in $(seq 1 $ITERATIONS);
+    do
+        OUTPUT_FILE="${OUTPUT_DIR}/$i.wav"
+        echo "Generating file ${OUTPUT_FILE} with prompt \"${PROMPT}\""
+        musicgpt ${DATA_ARGS} ${MUSICGPT_ARGS} --output ${OUTPUT_FILE} "${PROMPT}"
+    done
+else
+    echo "Error creating output dir."
+fi
+
+
+
