@@ -28,6 +28,4 @@ fi
 # configuration for what we are about to start.
 set -a
 
-# Args:
-# --api - expose the API so other services can talk to it.
 musicgpt ${DATA_ARGS} ${MUSICGPT_ARGS} --ui-no-open
