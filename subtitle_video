@@ -1,12 +1,32 @@
 #!/bin/bash
 
-AUTO_SUBTITLE_DIR=/home/matt/storage1/ai/auto-subtitle
+# number of people talking in the video. This is almost always just
+# me, so I'll change the script if that ever changes, rather than
+# remember what I called the option.
+NUM_SPEAKERS=1
+
+VENV_DIR=/home/matt/storage1/ai/whisperx/venv
+MODEL_DIR=/home/matt/storage1/ai/whisperx/models
 MODEL=large-v3
+
+# Note: float16 doesn't work with CPU
+CPU_ARGS="--device cpu --threads 16 --compute_type int8"
+
+# float16 + batch_size = 1 exhausts memory on 16GB GPU... I guess
+# we're limited to int8...
+GPU_ARGS="--device cuda --compute_type int8 --batch_size 8"
+
+GENERATION_ARGS="--max_line_width 70 --max_line_count 1"
 
 VIDEO=$1
 
 SRT="${VIDEO%.*}".srt
 
-source ${AUTO_SUBTITLE_DIR}/venv/bin/activate
-auto_subtitle --model ${MODEL} --language en --srt_only true --output_srt true $VIDEO
+CTRANSLATE_ROCM_PATH=/home/matt/storage1/ai/CTranslate2-rocm/build
+
+source ${VENV_DIR}/bin/activate
+
+LD_LIBRARY_PATH=${CTRANSLATE_ROCM_PATH} whisperx --model ${MODEL} ${GPU_ARGS} ${GENERATION_ARGS} \
+               --model_dir ${MODEL_DIR} --output_format srt --verbose False --language en \
+               --print_progress True --min_speakers ${NUM_SPEAKERS} --max_speakers ${NUM_SPEAKERS} $VIDEO
 deactivate
