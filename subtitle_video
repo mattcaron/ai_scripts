@@ -17,8 +17,6 @@ CPU_ARGS="--device cpu --threads 16 --compute_type int8"
 # we're limited to int8...
 GPU_ARGS="--device cuda --compute_type int8 --batch_size 8"
 
-LINE_ARGS="--max_line_width 60 --max_line_count 1"
-
 VIDEO=$1
 
 SRT="${VIDEO%.*}".srt
@@ -27,7 +25,8 @@ CTRANSLATE_ROCM_PATH=/home/matt/storage1/ai/CTranslate2-rocm/build
 
 source ${VENV_DIR}/bin/activate
 
-LD_LIBRARY_PATH=${CTRANSLATE_ROCM_PATH} whisperx --model ${MODEL} ${GPU_ARGS} ${LINE_ARGS} \
+LD_LIBRARY_PATH=${CTRANSLATE_ROCM_PATH} whisperx --model ${MODEL} ${GPU_ARGS} \
                --model_dir ${MODEL_DIR} --output_format srt --verbose False --language en \
                --print_progress True --min_speakers ${NUM_SPEAKERS} --max_speakers ${NUM_SPEAKERS} $VIDEO
+
 deactivate
