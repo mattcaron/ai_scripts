@@ -3,15 +3,18 @@
 # number of people talking in the video. This is almost always just
 # me, so I'll change the script if that ever changes, rather than
 # remember what I called the option.
-# You likely also need to add --diarize
 NUM_SPEAKERS=1
+
+# If NUM_SPEAKERS > 1, You likely also need to add --diarize here for
+# good speaker tracking.
+SPEAKERS_ARGS="--min_speakers ${NUM_SPEAKERS} --max_speakers ${NUM_SPEAKERS}"
 
 VENV_DIR=/home/matt/storage1/ai/whisperx/venv
 MODEL_DIR=/home/matt/storage1/ai/whisperx/models
 MODEL=large-v3
 
 # Note: float16 doesn't work with CPU
-CPU_ARGS="--device cpu --threads 16 --compute_type int8"
+CPU_ARGS="--device cpu --threads 32 --compute_type int8"
 
 # float16 + batch_size = 1 exhausts memory on 16GB GPU... I guess
 # we're limited to int8...
@@ -27,6 +30,6 @@ source ${VENV_DIR}/bin/activate
 
 LD_LIBRARY_PATH=${CTRANSLATE_ROCM_PATH} whisperx --model ${MODEL} ${GPU_ARGS} \
                --model_dir ${MODEL_DIR} --output_format srt --verbose False --language en \
-               --print_progress True --min_speakers ${NUM_SPEAKERS} --max_speakers ${NUM_SPEAKERS} $VIDEO
+               --print_progress True ${SPEAKERS_ARGS} $VIDEO
 
 deactivate
