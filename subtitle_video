@@ -2,12 +2,19 @@
 
 # number of people talking in the video. This is almost always just
 # me, so I'll change the script if that ever changes, rather than
-# remember what I called the option.
+# remember what I called the option, having to ask help, etc.
 NUM_SPEAKERS=1
 
-# If NUM_SPEAKERS > 1, You likely also need to add --diarize here for
-# good speaker tracking.
-SPEAKERS_ARGS="--min_speakers ${NUM_SPEAKERS} --max_speakers ${NUM_SPEAKERS}"
+HF_TOKEN=`cat ~/.huggingface_token`
+
+if [ $NUM_SPEAKERS -ne 1 ]; then
+    # For some reason, it seems to work better when you add 1 to the max
+    # number of speakers.
+    MAX_SPEAKERS=$(($NUM_SPEAKERS + 1))
+   
+    echo "Enabling diarization for ${NUM_SPEAKERS} speakers".
+    SPEAKERS_ARGS="--min_speakers ${NUM_SPEAKERS} --max_speakers ${MAX_SPEAKERS} --diarize --hf_token ${HF_TOKEN}"
+fi
 
 VENV_DIR=/home/matt/storage1/ai/whisperx/venv
 MODEL_DIR=/home/matt/storage1/ai/whisperx/models
