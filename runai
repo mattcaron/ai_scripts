@@ -14,10 +14,10 @@ REMOTE_MUSICGPT=0
 source `dirname $0`/ai_paths
 
 # Window sizes and positions
-WINDOW1_GEOMETRY="120x22+110+390"
-WINDOW2_GEOMETRY="120x22+110+735"
-WINDOW3_GEOMETRY="120x22+980+390"
-WINDOW4_GEOMETRY="120x22+980+735"
+WINDOW1_GEOMETRY="120x24+110+288"
+WINDOW2_GEOMETRY="120x24+110+750"
+WINDOW3_GEOMETRY="120x24+980+288"
+WINDOW4_GEOMETRY="120x24+980+750"
 
 # Address of my desktop machine with the big GPU. Note that we
 # hardcode this in the run* configs, because those support lots of
