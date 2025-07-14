@@ -23,20 +23,19 @@ MODEL=large-v3
 # Note: float16 doesn't work with CPU
 CPU_ARGS="--device cpu --threads 32 --compute_type int8"
 
-# float16 + batch_size = 1 exhausts memory on 16GB GPU... I guess
-# we're limited to int8...
-GPU_ARGS="--device cuda --compute_type int8 --batch_size 8"
+# int8 doesn't work on 5070 TI. See:
+# https://github.com/SYSTRAN/faster-whisper/issues/1260
+GPU_ARGS="--device cuda --compute_type float16 --batch_size 8"
 
 VIDEO=$1
 
 SRT="${VIDEO%.*}".srt
 
-CTRANSLATE_ROCM_PATH=/home/matt/storage1/ai/CTranslate2-rocm/build
+
 
 source ${VENV_DIR}/bin/activate
 
-LD_LIBRARY_PATH=${CTRANSLATE_ROCM_PATH} whisperx --model ${MODEL} ${GPU_ARGS} \
-               --model_dir ${MODEL_DIR} --output_format srt --verbose False --language en \
-               --print_progress True ${SPEAKERS_ARGS} $VIDEO
+whisperx --model ${MODEL} ${GPU_ARGS} --model_dir ${MODEL_DIR} --output_format srt \
+         --verbose False --language en --print_progress True ${SPEAKERS_ARGS} $VIDEO
 
 deactivate
