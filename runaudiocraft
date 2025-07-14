@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Run Audiocraft WebUI with proper local arguments
+
+# This is a separate file so we can just ssh in and run this one thing
+# for easy remote use.
+
+# Get our paths
+source `dirname $0`/ai_paths
+
+# export everything we're about to set because, from here on, it's
+# configuration for what we are about to start.
+set -a
+
+# Store the models in a subdir of the audiocraft base dir so I don't
+# have to hunt them down if I end up deleting it all.
+AUDIOCRAFT_CACHE_DIR=${AUDIOCRAFT_BASE_DIR}/models
+
+cd ${AUDIOCRAFT_BASE_DIR} && source venv/bin/activate && python ${AUDIOCRAFT_BASE_DIR}/webui.py
+

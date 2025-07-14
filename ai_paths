@@ -5,4 +5,4 @@ AI_BASE_DIR=/home/matt/storage1/ai
 SD_BASE_DIR=${AI_BASE_DIR}/stable-diffusion-webui
 OLLAMA_BASE_DIR=${AI_BASE_DIR}/ollama
 OPEN_WEBUI_BASE_DIR=${AI_BASE_DIR}/open-webui
-MUSICGPT_STORAGE=${AI_BASE_DIR}/musicgpt
+AUDIOCRAFT_BASE_DIR=${AI_BASE_DIR}/audiocraft-webui

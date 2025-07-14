@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Default is to just start Ollama and not Stable Diffusion or MusicGPT
+# Default is to just start Ollama and not Stable Diffusion or Audiocraft WebUI
 START_OLLAMA=1
 START_SD=0
 REMOTE_SD=0
 REMOTE_OLLAMA=0
 REMOTE_OPENWEBUI=0
 START_REMOTES=1
-START_MUSICGPT=0
-REMOTE_MUSICGPT=0
+START_AUDIOCRAFT=0
+REMOTE_AUDIOCRAFT=0
 
 # Get our paths
 source `dirname $0`/ai_paths
@@ -65,8 +65,8 @@ do
             echo "    --remote-images = start and then connect to a remote Stable Diffusion server"
             echo "    --remote-ollama = start and then connect to a remote Ollama server"
             echo "    --remote-openwebui = start and then connect to a remote Open WebUi server"
-            echo "    --music = run MusicGPT"
-            echo "    --remote-music = start and then connect to a remote MusicGPT server"
+            echo "    --music = run Audiocraft WebUI"
+            echo "    --remote-music = start and then connect to a remote Audiocraft WebUI server"
             echo "    --no-remote-start = don't start the above three remote servers, just connect to existing instances"
             exit 0
             shift;;
@@ -96,11 +96,11 @@ do
             shift;;
 
         -m|--music)
-            START_MUSICGPT=1
+            START_AUDIOCRAFT=1
             shift;;
 
         -c|--remote-music)
-            REMOTE_MUSICGPT=1
+            REMOTE_AUDIOCRAFT=1
             shift;;
 
         --)
@@ -109,7 +109,7 @@ do
     esac
 done
 
-if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 && $START_MUSICGPT -eq 0 && $REMOTE_MUSICGPT -eq 0 ]]; then   
+if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 && $START_AUDIOCRAFT -eq 0 && $REMOTE_AUDIOCRAFT -eq 0 ]]; then   
     echo "Warning: Options selected result in a no-op. Doing nothing as requested."
     exit 0
 fi
@@ -119,8 +119,8 @@ if [[ $START_SD -eq 1 && $REMOTE_SD -eq 1 ]]; then
     exit 1
 fi
 
-if [[ $START_MUSICGPT -eq 1 && $REMOTE_MUSICGPT -eq 1 ]]; then
-    echo "ERROR: Incorrect arguments - we cannot use both local and remote MusicGPT."
+if [[ $START_AUDIOCRAFT -eq 1 && $REMOTE_AUDIOCRAFT -eq 1 ]]; then
+    echo "ERROR: Incorrect arguments - we cannot use both local and remote Audiocraft WebUI."
     exit 1
 fi
 
@@ -141,7 +141,7 @@ are_we_inside() {
 }
 
 # Only check to see if we're inside if a remote option was selected.
-if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 || $REMOTE_OPENWEBUI -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
+if [[ $REMOTE_SD -eq 1 || $REMOTE_OLLAMA -eq 1 || $REMOTE_OPENWEBUI -eq 1 || $REMOTE_AUDIOCRAFT -eq 1 ]]; then
     are_we_inside
     INSIDE=$?
 else
@@ -164,7 +164,7 @@ else
 fi
 
 shutdown() {
-   if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
+   if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_AUDIOCRAFT -eq 1 ]]; then
     ssh-add -d ~/.ssh/id_rsa
    fi
    jobs -p | xargs kill -INT
@@ -174,7 +174,7 @@ shutdown() {
 trap 'shutdown' EXIT
 
 # If any remote options are selected, preload my ssh key to save repetitive typing
-if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_MUSICGPT -eq 1 ]]; then
+if [[ $REMOTE_OLLAMA -eq 1 || $REMOTE_SD -eq 1 || $REMOTE_AUDIOCRAFT -eq 1 ]]; then
     ssh-add ~/.ssh/id_rsa
 fi
 
@@ -253,24 +253,24 @@ if [ $REMOTE_SD -eq 1 ]; then
     fi
 fi
 
-if [ $START_MUSICGPT -eq 1 ]; then
-    echo "Starting local MusicGPT on  http://localhost:8642"
-    xterm -geometry ${WINDOW4_GEOMETRY} -e runmusicgpt &
+if [ $START_AUDIOCRAFT -eq 1 ]; then
+    echo "Starting local Audiocraft WebUI on  http://localhost:5000"
+    xterm -geometry ${WINDOW4_GEOMETRY} -e runaudiocraft &
 fi
 
-if [ $REMOTE_MUSICGPT -eq 1 ]; then
+if [ $REMOTE_AUDIOCRAFT -eq 1 ]; then
         if [ $START_REMOTES -eq 1 ]; then
-            MUSICGPT_CMD="runmusicgpt"
+            AUDIOCRAFT_CMD="runaudiocraft"
         else
-            MUSICGPT_CMD=""
+            AUDIOCRAFT_CMD=""
         fi
 
     if [ $INSIDE -eq 1 ]; then
-        echo "Starting remote MusicGPT forwarded to 127.0.0.1:8642"
-        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 8642:localhost:8642 ${REMOTE_INSIDE_ADDRESS} '${MUSICGPT_CMD}'" &
+        echo "Starting remote Audiocraft WebUI forwarded to 127.0.0.1:5000"
+        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 5000:localhost:5000 ${REMOTE_INSIDE_ADDRESS} '${AUDIOCRAFT_CMD}'" &
     else
         echo "Starting remote stable diffusion forwarded to 127.0.0.1:8642 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
-        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 8642:localhost:8642 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8642:localhost:8642 ${REMOTE_INSIDE_ADDRESS} ${MUSICGPT_CMD}'" &
+        xterm -geometry ${WINDOW4_GEOMETRY} -e "ssh -t -L 8642:localhost:8642 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8642:localhost:8642 ${REMOTE_INSIDE_ADDRESS} ${AUDIOCRAFT_CMD}'" &
     fi
 fi
 
