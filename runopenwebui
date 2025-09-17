@@ -46,17 +46,12 @@ done
 
 HOSTNAME=`hostname`
 
-if [ $HOSTNAME == "hiro" ]; then
+if [ $HOSTNAME == "hiro" ] ||
+   [ $HOSTNAME == "bluebox" ]; then
     echo "Running on hiro, using that config."
 
-    # This machine's GPU is super slow, so use a lean and fast model.
-    # TODO - once an uncensored version if this is out, use it.
-    DEFAULT_OLLAMA_MODELS="llama3.2:1b"
-elif [ $HOSTNAME == "bluebox" ]; then
-    echo "Running on bluebox, using that config."
-
     # My preferred uncensored model.
-    DEFAULT_OLLAMA_MODELS="dolphin3:latest"
+    DEFAULT_OLLAMA_MODELS="llama2-uncensored:7b-chat-q8_0"
 else
     echo "Unknown host, using default config."
 fi

@@ -8,20 +8,9 @@
 # Get our paths
 source `dirname $0`/ai_paths
 
-if [ $HOSTNAME == "hiro" ]; then
-    echo "Running on hiro, using that config."
-
-    # Platform specific stable diffusion arguments.
-    # --skip-torch-cuda-test - nVidia M1200. Too old, fails this test.
-    # --xformers - reduces memory usage (nVidia exclusive)
-    # --lowvram - M1200 only has 4GB VRAM. This allows stuff to fit.
-    SD_ARGS="--skip-torch-cuda-test --xformers --lowvram"
-    
-elif [ $HOSTNAME == "bluebox" ]; then
-    echo "Running on bluebox, using that config."
-
-    # Platform specific stable diffusion arguments.
-    # --skip-torch-cuda-test - AMD GPU, fails this test.
+if [ $HOSTNAME == "hiro" ] ||
+   [ $HOSTNAME == "bluebox" ]; then
+    echo "Running on hiro/bluebox, using that config."
     SD_ARGS="--xformers --medvram"
 else
     echo "Unknown host, using default config."
