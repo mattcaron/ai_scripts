@@ -18,6 +18,25 @@ OLLAMA_HOST=127.0.0.1
 OLLAMA_MODELS=${OLLAMA_BASE_DIR}/models
 OLLAMA_KEEP_ALIVE=30m
 
+# OOM mitigations.
+# Ref: https://github.com/ollama/ollama/issues/8597#issuecomment-2614533288
+
+# Allow mixed use of CPU and GPU memory.
+GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+
+##  Memory optimizations ##
+
+# Flash attention reduces memory usage as context size grows. See
+# https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-enable-flash-attention
+OLLAMA_FLASH_ATTENTION=1
+
+# KV cache quant type. See:
+# https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-set-the-quantization-type-for-the-kv-cache
+# Note: With q8_0, it schedules everything 100% on CPU for larger
+# models. Loss of precision here is therefore acceptable for the speed
+# of running on the GPU.
+OLLAMA_KV_CACHE_TYPE=q4_0
+
 # Required for ThunderAI to use local OLLAMA
 OLLAMA_ORIGINS=moz-extension://*
 
