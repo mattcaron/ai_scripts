@@ -14,17 +14,12 @@ REMOTE_AUDIOCRAFT=0
 source `dirname $0`/ai_paths
 
 # Window sizes and positions
-if [ `hostname` == "hiro" ]; then
-    WINDOW1_GEOMETRY="120x24+110+260"
-    WINDOW2_GEOMETRY="120x24+110+750"
-    WINDOW3_GEOMETRY="120x24+978+260"
-    WINDOW4_GEOMETRY="120x24+978+750"
-else
-    WINDOW1_GEOMETRY="120x24+110+260"
-    WINDOW2_GEOMETRY="120x24+110+656"
-    WINDOW3_GEOMETRY="120x24+978+260"
-    WINDOW4_GEOMETRY="120x24+978+656"
-fi
+# This happens to be the same for now since the displays are the same
+# DPI.
+WINDOW1_GEOMETRY="120x24+110+260"
+WINDOW2_GEOMETRY="120x24+110+656"
+WINDOW3_GEOMETRY="120x24+978+260"
+WINDOW4_GEOMETRY="120x24+978+656"
 
 # Address of my desktop machine with the big GPU. Note that we
 # hardcode this in the run* configs, because those support lots of
