@@ -71,8 +71,6 @@ WEBUI_AUTH=False
 # But only listen on localhost
 HOST=127.0.0.1
 DATA_DIR=${AI_BASE_DIR}/open-webui-data
-FRONTEND_BUILD_DIR=${OPEN_WEBUI_BASE_DIR}/build
-STATIC_DIR=${OPEN_WEBUI_BASE_DIR}/static
 ENABLE_SIGNUP=False
 DEFAULT_MODELS=${DEFAULT_OLLAMA_MODELS}
 ENABLE_COMMUNITY_SHARING=False
@@ -111,4 +109,4 @@ if [[ $SD -eq 1 ]]; then
     IMAGE_STEPS=20
 fi
 
-source ${OPEN_WEBUI_BASE_DIR}/venv/bin/activate && ${OPEN_WEBUI_BASE_DIR}/backend/start.sh
+source ${OPEN_WEBUI_BASE_DIR}/venv/bin/activate && open-webui serve
