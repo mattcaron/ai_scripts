@@ -2,6 +2,7 @@
 
 # Default is to just start Ollama and not Stable Diffusion or Audiocraft WebUI
 START_OLLAMA=1
+START_OPENWEBUI=1
 START_SD=0
 REMOTE_SD=0
 REMOTE_OLLAMA=0
@@ -34,7 +35,7 @@ REMOTE_OUTSIDE_ADDRESS=`cat ${HOME}/.bluebox_outside_address`
 
 # Execute getopt on the arguments passed to this program, identified
 # by the special character $@
-PARSED_OPTIONS=$(getopt -n "$0" -o hnirosmcu --long "help,notext,images,remote-images,remote-ollama,remote-openwebui,music,remote-music,no-remote-start"  -- "$@")
+PARSED_OPTIONS=$(getopt -n "$0" -o henirosmcu --long "help,noweb,notext,images,remote-images,remote-ollama,remote-openwebui,music,remote-music,no-remote-start"  -- "$@")
 
 # Bad arguments, something has gone wrong with the getopt command.
 if [ $? -ne 0 ]; then
@@ -63,6 +64,7 @@ do
             echo "Options:"
             echo "    --help = print this help"
             echo "    --notext = don't run Ollama and Open-Webui"
+            echo "    --noweb = don't run Open-Webui (but still run Ollama - useful for OpenCode)"
             echo "    --images = run Stable Diffusion"
             echo "    --remote-images = start and then connect to a remote Stable Diffusion server"
             echo "    --remote-ollama = start and then connect to a remote Ollama server"
@@ -72,9 +74,14 @@ do
             echo "    --no-remote-start = don't start the above three remote servers, just connect to existing instances"
             exit 0
             shift;;
+
+        -w|--noweb)
+            START_OPENWEBUI=0
+            shift;;
         
         -n|--notext)
             START_OLLAMA=0
+            START_OPENWEBUI=0
             shift;;
         
         -i|--images)
@@ -111,7 +118,7 @@ do
     esac
 done
 
-if [[ $START_OLLAMA -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 && $START_AUDIOCRAFT -eq 0 && $REMOTE_AUDIOCRAFT -eq 0 ]]; then   
+if [[ $START_OLLAMA -eq 0 && $START_OPENWEBUI -eq 0 && $START_SD -eq 0 && $REMOTE_SD -eq 0 && $START_AUDIOCRAFT -eq 0 && $REMOTE_AUDIOCRAFT -eq 0 ]]; then
     echo "Warning: Options selected result in a no-op. Doing nothing as requested."
     exit 0
 fi
@@ -207,30 +214,32 @@ if [ $START_OLLAMA -eq 1 ]; then
         xterm -geometry ${WINDOW1_GEOMETRY} -e runollama  &
     fi
 
-    OPENWEBUI_ARGS=""
-    if [[ $START_SD -eq 1 || $REMOTE_SD -eq 1 ]]; then
-        OPENWEBUI_ARGS="--stable-diffusion"
-    fi
-
-    if [ $REMOTE_OPENWEBUI -eq 1 ]; then
-
-        if [ $START_REMOTES -eq 1 ]; then
-            OPENWEBUI_CMD="runopenwebui ${OPENWEBUI_ARGS}"
-        else
-            OPENWEBUI_CMD=""
+    if [ $START_OPENWEBUI -eq 1 ]; then
+        OPENWEBUI_ARGS=""
+        if [[ $START_SD -eq 1 || $REMOTE_SD -eq 1 ]]; then
+            OPENWEBUI_ARGS="--stable-diffusion"
         fi
-        
-        if [ $INSIDE -eq 1 ]; then
-            echo "Starting remote Open WebUI on 127.0.0.1:8080"
-            xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} '${OPENWEBUI_CMD}'" &
+
+        if [ $REMOTE_OPENWEBUI -eq 1 ]; then
+
+            if [ $START_REMOTES -eq 1 ]; then
+                OPENWEBUI_CMD="runopenwebui ${OPENWEBUI_ARGS}"
+            else
+                OPENWEBUI_CMD=""
+            fi
+
+            if [ $INSIDE -eq 1 ]; then
+                echo "Starting remote Open WebUI on 127.0.0.1:8080"
+                xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} '${OPENWEBUI_CMD}'" &
+            else
+                echo "Starting remote Open WebUI on 127.0.0.1:8080 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
+                xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} ${OPENWEBUI_CMD}'" &
+            fi
+
         else
-            echo "Starting remote Open WebUI on 127.0.0.1:8080 via jumphost ${REMOTE_OUTSIDE_ADDRESS}"
-            xterm -geometry ${WINDOW2_GEOMETRY} -e "ssh -t -L 8080:localhost:8080 ${REMOTE_OUTSIDE_ADDRESS} 'ssh -L 8080:localhost:8080 ${REMOTE_INSIDE_ADDRESS} ${OPENWEBUI_CMD}'" &
+            echo "Starting local Open WebUI on 127.0.0.1:8080"
+            xterm -geometry ${WINDOW2_GEOMETRY} -e runopenwebui ${OPENWEBUI_ARGS}  &
         fi
-        
-    else
-        echo "Starting local Open WebUI on 127.0.0.1:8080"
-        xterm -geometry ${WINDOW2_GEOMETRY} -e runopenwebui ${OPENWEBUI_ARGS}  &
     fi
 fi
 
