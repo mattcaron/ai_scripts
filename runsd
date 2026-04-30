@@ -21,9 +21,6 @@ fi
 # configuration for what we are about to start.
 set -a
 
-# Different machines need different venvs because they have different incompatible dependencies.
-# I save space by only having the one for the given host present.
-venv_dir=${SD_BASE_DIR}/venv.${HOSTNAME}
 # Args:
 # --api - expose the API so other services can talk to it.
 ${SD_BASE_DIR}/webui.sh ${SD_ARGS} --api
